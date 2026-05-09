@@ -1,5 +1,5 @@
 import { motion, useTransform, useMotionValue } from 'framer-motion'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -18,6 +18,7 @@ const stagger = {
 export function Hero() {
   const wrapperRef = useRef(null)
   const videoRef = useRef(null)
+  const [videoReady, setVideoReady] = useState(false)
 
   // MotionValue manual — atualizado via scroll nativo (compatível com Lenis + iOS)
   const scrollProgress = useMotionValue(0)
@@ -31,27 +32,41 @@ export function Hero() {
 
     const update = () => {
       const wrapperTop = wrapper.offsetTop
-      const wrapperHeight = wrapper.offsetHeight   // ~3 * window.innerHeight
+      const wrapperHeight = wrapper.offsetHeight
       const viewportHeight = window.innerHeight
       const scrollY = window.scrollY
 
-      // progress 0 quando o topo do wrapper atinge o topo da viewport
-      // progress 1 quando o scroll percorreu toda a altura extra (wrapperHeight - viewportHeight)
       const scrolled = scrollY - wrapperTop
       const total = wrapperHeight - viewportHeight
       const progress = Math.min(Math.max(scrolled / total, 0), 1)
 
       scrollProgress.set(progress)
 
-      if (video.duration) {
+      // Só faz seek quando o vídeo está totalmente carregado (readyState 4)
+      if (video.readyState === 4 && video.duration) {
         video.currentTime = progress * video.duration
       }
     }
 
-    window.addEventListener('scroll', update, { passive: true })
-    update() // estado inicial
+    const onCanPlayThrough = () => {
+      setVideoReady(true)
+      update()
+    }
 
-    return () => window.removeEventListener('scroll', update)
+    // Se já carregou (cache do browser), dispara imediatamente
+    if (video.readyState === 4) {
+      setVideoReady(true)
+    } else {
+      video.addEventListener('canplaythrough', onCanPlayThrough)
+    }
+
+    window.addEventListener('scroll', update, { passive: true })
+    update()
+
+    return () => {
+      window.removeEventListener('scroll', update)
+      video.removeEventListener('canplaythrough', onCanPlayThrough)
+    }
   }, [scrollProgress])
 
   return (
@@ -253,18 +268,34 @@ export function Hero() {
                     background: '#0a0a0a',
                   }}
                 >
+                  {/* Shimmer enquanto o vídeo não está pronto */}
+                  {!videoReady && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(135deg, #111 0%, #1a1a1a 50%, #111 100%)',
+                        backgroundSize: '200% 200%',
+                        animation: 'shimmer 1.6s ease infinite',
+                        zIndex: 2,
+                      }}
+                    />
+                  )}
                   <video
                     ref={videoRef}
                     src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.mp4"
                     muted
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     style={{
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
                       objectPosition: 'center 15%',
                       display: 'block',
+                      opacity: videoReady ? 1 : 0,
+                      transition: 'opacity 0.4s ease',
                     }}
                   />
                   {/* Overlay gradiente sutil */}
@@ -339,6 +370,11 @@ export function Hero() {
       </div>
 
       <style>{`
+        @keyframes shimmer {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
         /* ── Tablet: empilha em 1 coluna ── */
         @media (max-width: 1024px) {
           .hero-grid {
