@@ -29,10 +29,16 @@ export function Hero() {
     const isMobile = window.innerWidth <= 768
 
     if (isMobile) {
-      // No iOS, play() deve ser chamado via JS após interação do usuário
-      // mas como é muted+playsInline, o browser permite autoplay direto
       video.play().catch(() => {})
       return
+    }
+
+    // Desktop: pausa o vídeo e controla via scrubbing
+    const onLoaded = () => { video.pause() }
+    if (video.readyState >= 1) {
+      video.pause()
+    } else {
+      video.addEventListener('loadedmetadata', onLoaded, { once: true })
     }
 
     const wrapper = wrapperRef.current
@@ -58,7 +64,10 @@ export function Hero() {
     window.addEventListener('scroll', update, { passive: true })
     update()
 
-    return () => window.removeEventListener('scroll', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      video.removeEventListener('loadedmetadata', onLoaded)
+    }
   }, [scrollProgress])
 
   return (
