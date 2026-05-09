@@ -1,5 +1,5 @@
 import { motion, useTransform, useMotionValue } from 'framer-motion'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -18,19 +18,25 @@ const stagger = {
 export function Hero() {
   const wrapperRef = useRef(null)
   const videoRef = useRef(null)
-  const [isMobile, setIsMobile] = useState(false)
 
   const scrollProgress = useMotionValue(0)
   const bgY = useTransform(scrollProgress, [0, 1], ['0%', '20%'])
 
   useEffect(() => {
-    const mobile = window.innerWidth <= 768
-    setIsMobile(mobile)
-    if (mobile) return // no mobile usa autoplay, sem scrubbing
+    const video = videoRef.current
+    if (!video) return
+
+    const isMobile = window.innerWidth <= 768
+
+    if (isMobile) {
+      // No iOS, play() deve ser chamado via JS após interação do usuário
+      // mas como é muted+playsInline, o browser permite autoplay direto
+      video.play().catch(() => {})
+      return
+    }
 
     const wrapper = wrapperRef.current
-    const video = videoRef.current
-    if (!wrapper || !video) return
+    if (!wrapper) return
 
     const update = () => {
       const wrapperTop = wrapper.offsetTop
@@ -59,7 +65,8 @@ export function Hero() {
     <div
       ref={wrapperRef}
       id="hero"
-      style={{ height: isMobile ? '100vh' : '300vh', position: 'relative' }}
+      className="hero-wrapper"
+      style={{ height: '300vh', position: 'relative' }}
     >
       {/* Conteúdo sticky — fica fixo enquanto o wrapper é scrollado */}
       <div
@@ -259,8 +266,8 @@ export function Hero() {
                     muted
                     playsInline
                     preload="auto"
-                    autoPlay={isMobile}
-                    loop={isMobile}
+                    autoPlay
+                    loop
                     style={{
                       width: '100%',
                       height: '100%',
@@ -366,6 +373,7 @@ export function Hero() {
 
         /* ── Mobile: vídeo em background fullscreen, texto na frente ── */
         @media (max-width: 768px) {
+          .hero-wrapper { height: 100vh !important; }
           /* Container sem padding lateral para o vídeo poder ir até a borda */
           .hero-container {
             padding-left: 0 !important;
@@ -425,12 +433,12 @@ export function Hero() {
             display: none !important;
           }
 
-          /* Texto centralizado horizontalmente acima do vídeo */
+          /* Texto com z-index acima do vídeo, alinhado à esquerda igual à headline */
           .hero-text-col {
             position: relative;
             z-index: 2;
-            text-align: center !important;
-            align-items: center !important;
+            text-align: left !important;
+            align-items: flex-start !important;
             width: 100%;
           }
         }

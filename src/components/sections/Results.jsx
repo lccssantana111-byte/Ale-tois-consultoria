@@ -545,43 +545,22 @@ export function Results() {
           .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); }
           .metric-card-2 { border-bottom: none !important; }
 
-          /* No mobile: desativa o sticky scroll-driven, usa swipe nativo */
           .carousel-sticky {
-            position: relative !important;
-            top: 0 !important;
-            height: auto !important;
-          }
-          .carousel-track-wrapper {
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            scroll-snap-type: x mandatory !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: none !important;
-          }
-          .carousel-track-wrapper::-webkit-scrollbar { display: none; }
-          .carousel-motion-track {
-            transform: none !important;
-            flex-wrap: nowrap !important;
-          }
-          .before-after-slot {
-            scroll-snap-align: start !important;
-            height: 65vw !important;
-            min-height: 280px !important;
-            max-height: 420px !important;
-            padding: 6px 8px !important;
+            top: 72px !important;
+            height: calc(100vh - 72px) !important;
           }
           .carousel-header {
-            flex-direction: row !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            gap: 8px !important;
-            padding: 10px 16px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+            padding: 12px 20px 10px !important;
           }
           .carousel-title {
-            font-size: 20px !important;
+            font-size: 26px !important;
             line-height: 1 !important;
           }
-          .carousel-nav { gap: 10px !important; }
+          .carousel-nav { gap: 12px !important; }
+          .before-after-slot { padding: 6px 8px !important; }
         }
         @media (max-width: 480px) {
           .carousel-title {
