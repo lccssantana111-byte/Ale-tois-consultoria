@@ -27,11 +27,13 @@ function ContactForm() {
     e.preventDefault()
     if (!values.nome || !values.whatsapp || !values.objetivo) return
 
-    await supabase.from('leads').insert({
-      nome: values.nome,
-      whatsapp: values.whatsapp,
-      objetivo: values.objetivo,
-    })
+    if (supabase) {
+      await supabase.from('leads').insert({
+        nome: values.nome,
+        whatsapp: values.whatsapp,
+        objetivo: values.objetivo,
+      })
+    }
 
     const text = encodeURIComponent(
       `Olá, Ale! Vi seu site e tenho interesse na consultoria.\nMeu objetivo é: ${values.objetivo}\nMeu nome: ${values.nome}\nMeu WhatsApp: ${values.whatsapp}\nPode me contar mais sobre como funciona?`
