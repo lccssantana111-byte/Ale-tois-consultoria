@@ -34,31 +34,43 @@ export function Hero() {
       return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
-    const applySeek = () => {
-      const dur = video.duration
-      if (!dur || isNaN(dur)) return
-      const progress = getProgress()
-      scrollProgress.set(progress)
-      const target = progress * dur
+    const doSeek = (target) => {
       try {
         if (typeof video.fastSeek === 'function') video.fastSeek(target)
         else video.currentTime = target
       } catch (_) {}
     }
 
-    const onScroll = () => applySeek()
+    const applySeek = () => {
+      const dur = video.duration
+      if (!dur || isNaN(dur)) return
+      const progress = getProgress()
+      scrollProgress.set(progress)
+      doSeek(progress * dur)
+    }
 
-    // Dispara seek assim que o vídeo tiver duração disponível
-    video.addEventListener('loadedmetadata', applySeek)
-    video.addEventListener('canplay', applySeek)
+    // iOS Safari só permite seek após play() ter sido chamado.
+    // play()+pause() imediato desbloqueia o seek sem reproduzir o vídeo.
+    const unlock = () => {
+      video.play().then(() => {
+        video.pause()
+        applySeek()
+      }).catch(() => {
+        applySeek()
+      })
+    }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
-    applySeek()
+    if (video.readyState >= 1) {
+      unlock()
+    } else {
+      video.addEventListener('loadedmetadata', unlock, { once: true })
+    }
+
+    window.addEventListener('scroll', applySeek, { passive: true })
 
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      video.removeEventListener('loadedmetadata', applySeek)
-      video.removeEventListener('canplay', applySeek)
+      window.removeEventListener('scroll', applySeek)
+      video.removeEventListener('loadedmetadata', unlock)
     }
   }, [scrollProgress])
 
