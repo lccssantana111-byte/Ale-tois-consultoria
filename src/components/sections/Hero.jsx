@@ -1,5 +1,5 @@
 import { motion, useTransform, useMotionValue } from 'framer-motion'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -18,11 +18,16 @@ const stagger = {
 export function Hero() {
   const wrapperRef = useRef(null)
   const videoRef = useRef(null)
+  const [isMobile, setIsMobile] = useState(false)
 
   const scrollProgress = useMotionValue(0)
   const bgY = useTransform(scrollProgress, [0, 1], ['0%', '20%'])
 
   useEffect(() => {
+    const mobile = window.innerWidth <= 768
+    setIsMobile(mobile)
+    if (mobile) return // no mobile usa autoplay, sem scrubbing
+
     const wrapper = wrapperRef.current
     const video = videoRef.current
     if (!wrapper || !video) return
@@ -51,11 +56,10 @@ export function Hero() {
   }, [scrollProgress])
 
   return (
-    // Wrapper com 300vh — dá espaço para o scroll percorrer o vídeo inteiro
     <div
       ref={wrapperRef}
       id="hero"
-      style={{ height: '300vh', position: 'relative' }}
+      style={{ height: isMobile ? '100vh' : '300vh', position: 'relative' }}
     >
       {/* Conteúdo sticky — fica fixo enquanto o wrapper é scrollado */}
       <div
@@ -255,6 +259,8 @@ export function Hero() {
                     muted
                     playsInline
                     preload="auto"
+                    autoPlay={isMobile}
+                    loop={isMobile}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -373,8 +379,9 @@ export function Hero() {
             gap: 0 !important;
             position: relative;
             height: 100% !important;
-            align-items: center !important;
-            padding: 0 var(--section-px) !important;
+            align-items: flex-end !important;
+            justify-items: center !important;
+            padding: 0 var(--section-px) 56px !important;
           }
 
           /* Vídeo posicionado como background absoluto */
@@ -401,9 +408,15 @@ export function Hero() {
             box-shadow: none !important;
           }
 
-          /* Overlay uniforme para texto centralizado legível */
+          /* Overlay com gradiente denso na base para texto legível */
           .hero-video-overlay {
-            background: rgba(10,10,10,0.55) !important;
+            background: linear-gradient(
+              to bottom,
+              rgba(10,10,10,0.1) 0%,
+              rgba(10,10,10,0.05) 30%,
+              rgba(10,10,10,0.6) 65%,
+              rgba(10,10,10,0.95) 100%
+            ) !important;
           }
 
           /* Elementos decorativos removidos no mobile */
@@ -412,10 +425,13 @@ export function Hero() {
             display: none !important;
           }
 
-          /* Texto com z-index acima do vídeo */
+          /* Texto centralizado horizontalmente acima do vídeo */
           .hero-text-col {
             position: relative;
             z-index: 2;
+            text-align: center !important;
+            align-items: center !important;
+            width: 100%;
           }
         }
 

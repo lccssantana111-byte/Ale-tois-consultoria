@@ -384,8 +384,9 @@ function StickyCarousel() {
         </div>
 
         {/* ── TRACK DE CARDS — preenche exatamente o espaço restante ── */}
-        <div style={{ flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0 }}>
+        <div className="carousel-track-wrapper" style={{ flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0 }}>
           <motion.div
+            className="carousel-motion-track"
             style={{
               display: 'flex',
               width: `${total * 100}vw`,
@@ -544,12 +545,31 @@ export function Results() {
           .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); }
           .metric-card-2 { border-bottom: none !important; }
 
-          /* No mobile a navbar some (ou fica menor) — sticky começa no topo */
+          /* No mobile: desativa o sticky scroll-driven, usa swipe nativo */
           .carousel-sticky {
+            position: relative !important;
             top: 0 !important;
-            height: 100vh !important;
+            height: auto !important;
           }
-
+          .carousel-track-wrapper {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            scroll-snap-type: x mandatory !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+          }
+          .carousel-track-wrapper::-webkit-scrollbar { display: none; }
+          .carousel-motion-track {
+            transform: none !important;
+            flex-wrap: nowrap !important;
+          }
+          .before-after-slot {
+            scroll-snap-align: start !important;
+            height: 65vw !important;
+            min-height: 280px !important;
+            max-height: 420px !important;
+            padding: 6px 8px !important;
+          }
           .carousel-header {
             flex-direction: row !important;
             align-items: center !important;
@@ -561,12 +581,7 @@ export function Results() {
             font-size: 20px !important;
             line-height: 1 !important;
           }
-          .carousel-nav {
-            gap: 10px !important;
-          }
-          .before-after-slot {
-            padding: 6px 8px !important;
-          }
+          .carousel-nav { gap: 10px !important; }
         }
         @media (max-width: 480px) {
           .carousel-title {
