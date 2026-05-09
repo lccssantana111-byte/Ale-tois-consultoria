@@ -1,5 +1,5 @@
 import { motion, useTransform, useMotionValue } from 'framer-motion'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -18,11 +18,8 @@ const stagger = {
 export function Hero() {
   const wrapperRef = useRef(null)
   const videoRef = useRef(null)
-  const [videoReady, setVideoReady] = useState(false)
 
-  // MotionValue manual — atualizado via scroll nativo (compatível com Lenis + iOS)
   const scrollProgress = useMotionValue(0)
-
   const bgY = useTransform(scrollProgress, [0, 1], ['0%', '20%'])
 
   useEffect(() => {
@@ -42,36 +39,15 @@ export function Hero() {
 
       scrollProgress.set(progress)
 
-      // Só faz seek quando o vídeo está totalmente carregado (readyState 4)
-      if (video.readyState === 4 && video.duration) {
+      if (video.readyState >= 2 && video.duration) {
         video.currentTime = progress * video.duration
       }
     }
 
-    const markReady = () => {
-      setVideoReady(true)
-      update()
-    }
-
-    if (video.readyState >= 2) {
-      // readyState >= 2 (HAVE_CURRENT_DATA) já tem frame suficiente para mostrar
-      setVideoReady(true)
-    } else {
-      // loadeddata dispara antes que canplaythrough — mais confiável no iOS
-      video.addEventListener('loadeddata', markReady, { once: true })
-    }
-
-    // Fallback: se após 3s ainda não disparou, mostra o vídeo mesmo assim
-    const fallback = setTimeout(() => setVideoReady(true), 3000)
-
     window.addEventListener('scroll', update, { passive: true })
     update()
 
-    return () => {
-      window.removeEventListener('scroll', update)
-      video.removeEventListener('loadeddata', markReady)
-      clearTimeout(fallback)
-    }
+    return () => window.removeEventListener('scroll', update)
   }, [scrollProgress])
 
   return (
@@ -273,20 +249,6 @@ export function Hero() {
                     background: '#0a0a0a',
                   }}
                 >
-                  {/* Shimmer enquanto o vídeo não está pronto */}
-                  {!videoReady && (
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(135deg, #111 0%, #1a1a1a 50%, #111 100%)',
-                        backgroundSize: '200% 200%',
-                        animation: 'shimmer 1.6s ease infinite',
-                        zIndex: 2,
-                      }}
-                    />
-                  )}
                   <video
                     ref={videoRef}
                     src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.mp4"
@@ -299,8 +261,6 @@ export function Hero() {
                       objectFit: 'cover',
                       objectPosition: 'center 15%',
                       display: 'block',
-                      opacity: videoReady ? 1 : 0,
-                      transition: 'opacity 0.4s ease',
                     }}
                   />
                   {/* Overlay gradiente sutil */}
