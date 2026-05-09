@@ -373,8 +373,8 @@ export function Hero() {
             gap: 0 !important;
             position: relative;
             height: 100% !important;
-            align-items: flex-end !important;
-            padding: 0 var(--section-px) 48px !important;
+            align-items: center !important;
+            padding: 0 var(--section-px) !important;
           }
 
           /* Vídeo posicionado como background absoluto */
@@ -401,15 +401,9 @@ export function Hero() {
             box-shadow: none !important;
           }
 
-          /* Overlay mais denso na base para texto legível */
+          /* Overlay uniforme para texto centralizado legível */
           .hero-video-overlay {
-            background: linear-gradient(
-              to bottom,
-              rgba(10,10,10,0.15) 0%,
-              rgba(10,10,10,0.05) 25%,
-              rgba(10,10,10,0.5) 60%,
-              rgba(10,10,10,0.93) 100%
-            ) !important;
+            background: rgba(10,10,10,0.55) !important;
           }
 
           /* Elementos decorativos removidos no mobile */
