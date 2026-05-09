@@ -306,6 +306,7 @@ function StickyCarousel() {
       style={{ height: `${total * 100}vh`, position: 'relative' }}
     >
       <div
+        className="carousel-sticky"
         style={{
           position: 'sticky',
           top: '72px',
@@ -543,18 +544,25 @@ export function Results() {
           .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); }
           .metric-card-2 { border-bottom: none !important; }
 
+          /* No mobile a navbar some (ou fica menor) — sticky começa no topo */
+          .carousel-sticky {
+            top: 0 !important;
+            height: 100vh !important;
+          }
+
           .carousel-header {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 10px !important;
-            padding: 12px 20px 10px !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+            padding: 10px 16px !important;
           }
           .carousel-title {
-            font-size: 26px !important;
+            font-size: 20px !important;
             line-height: 1 !important;
           }
           .carousel-nav {
-            gap: 12px !important;
+            gap: 10px !important;
           }
           .before-after-slot {
             padding: 6px 8px !important;
@@ -562,7 +570,7 @@ export function Results() {
         }
         @media (max-width: 480px) {
           .carousel-title {
-            font-size: 22px !important;
+            font-size: 18px !important;
           }
         }
       `}</style>

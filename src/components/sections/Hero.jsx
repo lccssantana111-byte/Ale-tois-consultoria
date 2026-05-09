@@ -48,24 +48,29 @@ export function Hero() {
       }
     }
 
-    const onCanPlayThrough = () => {
+    const markReady = () => {
       setVideoReady(true)
       update()
     }
 
-    // Se já carregou (cache do browser), dispara imediatamente
-    if (video.readyState === 4) {
+    if (video.readyState >= 2) {
+      // readyState >= 2 (HAVE_CURRENT_DATA) já tem frame suficiente para mostrar
       setVideoReady(true)
     } else {
-      video.addEventListener('canplaythrough', onCanPlayThrough)
+      // loadeddata dispara antes que canplaythrough — mais confiável no iOS
+      video.addEventListener('loadeddata', markReady, { once: true })
     }
+
+    // Fallback: se após 3s ainda não disparou, mostra o vídeo mesmo assim
+    const fallback = setTimeout(() => setVideoReady(true), 3000)
 
     window.addEventListener('scroll', update, { passive: true })
     update()
 
     return () => {
       window.removeEventListener('scroll', update)
-      video.removeEventListener('canplaythrough', onCanPlayThrough)
+      video.removeEventListener('loadeddata', markReady)
+      clearTimeout(fallback)
     }
   }, [scrollProgress])
 
