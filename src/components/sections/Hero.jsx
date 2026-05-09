@@ -23,50 +23,39 @@ export function Hero() {
   const bgY = useTransform(scrollProgress, [0, 1], ['0%', '20%'])
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const isMobile = window.innerWidth <= 768
-
-    if (isMobile) {
-      video.play().catch(() => {})
-      return
-    }
-
-    // Desktop: pausa o vídeo e controla via scrubbing
-    const onLoaded = () => { video.pause() }
-    if (video.readyState >= 1) {
-      video.pause()
-    } else {
-      video.addEventListener('loadedmetadata', onLoaded, { once: true })
-    }
-
     const wrapper = wrapperRef.current
-    if (!wrapper) return
+    const video = videoRef.current
+    if (!wrapper || !video) return
 
-    const update = () => {
-      const wrapperTop = wrapper.offsetTop
-      const wrapperHeight = wrapper.offsetHeight
-      const viewportHeight = window.innerHeight
-      const scrollY = window.scrollY
+    // Força carregamento mesmo em mobile que ignora preload="auto"
+    video.load()
 
-      const scrolled = scrollY - wrapperTop
-      const total = wrapperHeight - viewportHeight
-      const progress = Math.min(Math.max(scrolled / total, 0), 1)
-
-      scrollProgress.set(progress)
-
-      if (video.readyState >= 2 && video.duration) {
-        video.currentTime = progress * video.duration
+    const seek = (progress) => {
+      if (!video.duration) return
+      const target = progress * video.duration
+      if (typeof video.fastSeek === 'function') {
+        video.fastSeek(target)
+      } else {
+        video.currentTime = target
       }
     }
 
+    const update = () => {
+      const scrolled = window.scrollY - wrapper.offsetTop
+      const total = wrapper.offsetHeight - window.innerHeight
+      const progress = Math.min(Math.max(scrolled / total, 0), 1)
+      scrollProgress.set(progress)
+      seek(progress)
+    }
+
+    // Quando metadados carregarem, faz o seek inicial
+    video.addEventListener('loadedmetadata', update)
     window.addEventListener('scroll', update, { passive: true })
     update()
 
     return () => {
       window.removeEventListener('scroll', update)
-      video.removeEventListener('loadedmetadata', onLoaded)
+      video.removeEventListener('loadedmetadata', update)
     }
   }, [scrollProgress])
 
@@ -275,8 +264,6 @@ export function Hero() {
                     muted
                     playsInline
                     preload="auto"
-                    autoPlay
-                    loop
                     style={{
                       width: '100%',
                       height: '100%',
