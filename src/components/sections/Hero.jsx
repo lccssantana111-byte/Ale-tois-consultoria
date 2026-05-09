@@ -41,8 +41,13 @@ export function Hero() {
     }
 
     const update = () => {
-      const scrolled = window.scrollY - wrapper.offsetTop
       const total = wrapper.offsetHeight - window.innerHeight
+      // No mobile o wrapper é 100vh então total ≤ 0 — sem scroll para percorrer
+      if (total <= 0) {
+        seek(0)
+        return
+      }
+      const scrolled = window.scrollY - wrapper.offsetTop
       const progress = Math.min(Math.max(scrolled / total, 0), 1)
       scrollProgress.set(progress)
       seek(progress)
