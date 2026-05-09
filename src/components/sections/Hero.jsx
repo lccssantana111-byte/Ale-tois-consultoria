@@ -27,40 +27,38 @@ export function Hero() {
     const video = videoRef.current
     if (!wrapper || !video) return
 
-    // Força carregamento mesmo em mobile que ignora preload="auto"
-    video.load()
-
-    const seek = (progress) => {
-      if (!video.duration) return
-      const target = progress * video.duration
-      if (typeof video.fastSeek === 'function') {
-        video.fastSeek(target)
-      } else {
-        video.currentTime = target
-      }
-    }
-
-    const update = () => {
+    const getProgress = () => {
       const total = wrapper.offsetHeight - window.innerHeight
-      // No mobile o wrapper é 100vh então total ≤ 0 — sem scroll para percorrer
-      if (total <= 0) {
-        seek(0)
-        return
-      }
+      if (total <= 0) return 0
       const scrolled = window.scrollY - wrapper.offsetTop
-      const progress = Math.min(Math.max(scrolled / total, 0), 1)
-      scrollProgress.set(progress)
-      seek(progress)
+      return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
-    // Quando metadados carregarem, faz o seek inicial
-    video.addEventListener('loadedmetadata', update)
-    window.addEventListener('scroll', update, { passive: true })
-    update()
+    const applySeek = () => {
+      const dur = video.duration
+      if (!dur || isNaN(dur)) return
+      const progress = getProgress()
+      scrollProgress.set(progress)
+      const target = progress * dur
+      try {
+        if (typeof video.fastSeek === 'function') video.fastSeek(target)
+        else video.currentTime = target
+      } catch (_) {}
+    }
+
+    const onScroll = () => applySeek()
+
+    // Dispara seek assim que o vídeo tiver duração disponível
+    video.addEventListener('loadedmetadata', applySeek)
+    video.addEventListener('canplay', applySeek)
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    applySeek()
 
     return () => {
-      window.removeEventListener('scroll', update)
-      video.removeEventListener('loadedmetadata', update)
+      window.removeEventListener('scroll', onScroll)
+      video.removeEventListener('loadedmetadata', applySeek)
+      video.removeEventListener('canplay', applySeek)
     }
   }, [scrollProgress])
 
