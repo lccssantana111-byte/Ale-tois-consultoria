@@ -374,7 +374,6 @@ export function Hero() {
 
         /* ── Mobile: vídeo em background fullscreen, texto na frente ── */
         @media (max-width: 768px) {
-          .hero-wrapper { height: 100vh !important; }
           /* Container sem padding lateral para o vídeo poder ir até a borda */
           .hero-container {
             padding-left: 0 !important;
