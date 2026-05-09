@@ -258,7 +258,7 @@ export function Hero() {
                     src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.mp4"
                     muted
                     playsInline
-                    preload="auto"
+                    preload="metadata"
                     style={{
                       width: '100%',
                       height: '100%',
