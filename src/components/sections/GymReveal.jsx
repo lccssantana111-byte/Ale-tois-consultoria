@@ -416,7 +416,7 @@ export function GymReveal() {
         /* ── Mobile: mesmo sticky, grid empilhado ── */
         @media (max-width: 768px) {
           /* Scroll range reduzido: ~1 rolagem por beat */
-          .gym-wrapper { height: 250vh !important; }
+          .gym-wrapper { height: 220vh !important; }
 
           /* Grid vira 1 coluna: frame em cima (45vh), texto embaixo (55vh) */
           .gym-sticky--desktop {
