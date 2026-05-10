@@ -1,6 +1,7 @@
 import { useLenis } from './hooks/useLenis'
 import { Navbar } from './components/ui/Navbar'
 import { Hero } from './components/sections/Hero'
+import { GymReveal } from './components/sections/GymReveal'
 import { Results } from './components/sections/Results'
 import { Differentials } from './components/sections/Differentials'
 import { Methodology } from './components/sections/Methodology'
@@ -20,6 +21,7 @@ export default function App() {
         <Differentials />
         <Methodology />
         <Testimonials />
+        <GymReveal />
         <CTAFinal />
       </main>
       <Footer />
