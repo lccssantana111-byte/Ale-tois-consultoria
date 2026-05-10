@@ -164,26 +164,10 @@ export function GymReveal() {
     else window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
 
-    // Mobile: anima cada beat quando entra na viewport via IntersectionObserver
-    let io = null
-    if (isMobile) {
-      io = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = 1
-            entry.target.style.transform = 'translateY(0)'
-            io.unobserve(entry.target)
-          }
-        })
-      }, { threshold: 0.15 })
-      beatMobileRefs.forEach(r => { if (r.current) io.observe(r.current) })
-    }
-
     return () => {
       clearTimeout(deferred)
       clearTimeout(layoutTimer)
       ro.disconnect()
-      if (io) io.disconnect()
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (unsub) unsub()
       else window.removeEventListener('scroll', onScroll)
@@ -431,8 +415,8 @@ export function GymReveal() {
 
         /* ── Mobile: mesmo sticky, grid empilhado ── */
         @media (max-width: 768px) {
-          /* Mesma altura de scroll */
-          .gym-wrapper { height: 420vh !important; }
+          /* Scroll range reduzido: ~1 rolagem por beat */
+          .gym-wrapper { height: 250vh !important; }
 
           /* Grid vira 1 coluna: frame em cima (45vh), texto embaixo (55vh) */
           .gym-sticky--desktop {
