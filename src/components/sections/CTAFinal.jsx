@@ -208,9 +208,10 @@ export function CTAFinal() {
           className="cta-grid"
         >
           {/* Left: copy */}
-          <div>
+          <div className="cta-left">
             <motion.p
               variants={fadeUp}
+              className="cta-label"
               style={{
                 fontSize: '11px',
                 fontWeight: 500,
@@ -249,7 +250,7 @@ export function CTAFinal() {
               um método personalizado pode mudar a sua história.
             </motion.p>
 
-            <motion.div variants={fadeUp}>
+            <motion.div variants={fadeUp} className="cta-button-wrap">
               <Button
                 href={WA_LINK}
                 target="_blank"
@@ -264,6 +265,7 @@ export function CTAFinal() {
 
             <motion.p
               variants={fadeUp}
+              className="cta-footnote"
               style={{
                 marginTop: '20px',
                 fontSize: '12px',
@@ -308,6 +310,10 @@ export function CTAFinal() {
       <style>{`
         @media (max-width: 1024px) {
           .cta-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .cta-left { text-align: center !important; }
+          .cta-label { justify-content: center !important; }
+          .cta-button-wrap { display: flex !important; justify-content: center !important; }
+          .cta-footnote { text-align: center !important; }
         }
         @media (max-width: 768px) {
           .cta-form-card { padding: 24px !important; }

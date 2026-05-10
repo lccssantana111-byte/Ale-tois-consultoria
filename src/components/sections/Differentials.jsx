@@ -120,7 +120,7 @@ export function Differentials() {
           .diff-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 768px) {
-          .diff-header { grid-template-columns: 1fr !important; gap: 20px !important; }
+          .diff-header { grid-template-columns: 1fr !important; gap: 20px !important; text-align: center !important; }
           .diff-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>

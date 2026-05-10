@@ -104,12 +104,12 @@ function BeforeAfterCard({ item }) {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         width: '100%',
-        height: '100%',   // preenche o slot sem forçar aspectRatio
-        gap: '1px',
-        background: 'var(--border)',
+        height: '100%',
+        gap: '2px',
+        background: '#111',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
-        minHeight: 0,     // permite que o flex pai comprima corretamente
+        minHeight: 0,
       }}
     >
       {['ANTES', 'DEPOIS'].map((label, i) => (
@@ -122,7 +122,7 @@ function BeforeAfterCard({ item }) {
             minHeight: 0,
           }}
         >
-          {/* Imagem de fundo — cobre o card inteiro */}
+          {/* Imagem */}
           {(i === 0 ? item.imageBefore : item.imageAfter) ? (
             <img
               src={i === 0 ? item.imageBefore : item.imageAfter}
@@ -136,9 +136,7 @@ function BeforeAfterCard({ item }) {
                 objectFit: 'cover',
                 objectPosition: 'top center',
                 display: 'block',
-                filter: i === 0
-                  ? 'grayscale(80%) brightness(0.55) contrast(1.1)'
-                  : 'brightness(0.8) contrast(1.05) saturate(1.1)',
+                filter: i === 0 ? 'grayscale(100%) brightness(0.6)' : 'brightness(0.85)',
               }}
             />
           ) : (
@@ -146,9 +144,7 @@ function BeforeAfterCard({ item }) {
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: i === 0
-                  ? 'linear-gradient(160deg, #0e0e0e 0%, #1c1c1c 100%)'
-                  : 'linear-gradient(160deg, rgba(201,168,76,0.07) 0%, #141414 55%, #0e0e0e 100%)',
+                background: i === 0 ? '#111' : '#111',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -158,125 +154,58 @@ function BeforeAfterCard({ item }) {
             </div>
           )}
 
-          {/* Overlay de gradiente — escurece base para legibilidade do texto */}
+          {/* Gradiente base — legibilidade */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: i === 0
-                ? 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.75) 100%)'
-                : 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.8) 100%)',
+              background: 'linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.7) 100%)',
               pointerEvents: 'none',
             }}
           />
 
-          {/* Label faint no centro */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}
-          >
+          {/* Label topo — simples, sem box */}
+          <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 2 }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(48px, 8vw, 100px)',
-                color: i === 0 ? '#ffffff' : 'var(--accent-gold)',
-                opacity: 0.06,
-                userSelect: 'none',
-                letterSpacing: '0.06em',
+                fontSize: '10px',
+                fontWeight: 600,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: i === 0 ? 'rgba(255,255,255,0.45)' : 'var(--accent-gold)',
               }}
             >
               {label}
             </span>
           </div>
 
-          {/* Badge topo — sobre a imagem */}
-          <div style={{ position: 'absolute', top: '20px', left: '24px', zIndex: 2 }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '4px 11px',
-                background: 'rgba(10,10,10,0.85)',
-                backdropFilter: 'blur(12px)',
-                borderRadius: '100px',
-                border: `1px solid ${i === 0 ? 'var(--border)' : 'var(--border-gold)'}`,
-              }}
-            >
-              <span
+          {/* Info base — apenas no DEPOIS, sem box */}
+          {i === 1 && (
+            <div style={{ position: 'absolute', bottom: '22px', left: '20px', right: '20px', zIndex: 2 }}>
+              <p
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 'clamp(15px, 1.4vw, 20px)',
+                  color: 'var(--accent-gold)',
+                  letterSpacing: '0.02em',
+                  lineHeight: 1.1,
+                  marginBottom: '6px',
+                }}
+              >
+                {item.result}
+              </p>
+              <p
                 style={{
                   fontSize: '10px',
-                  fontWeight: 600,
-                  letterSpacing: '0.18em',
+                  color: 'rgba(255,255,255,0.45)',
+                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  color: i === 0 ? 'var(--text-muted)' : 'var(--accent-gold)',
                 }}
               >
-                {label}
-              </span>
+                {item.name} · {item.duration}
+              </p>
             </div>
-          </div>
-
-          {/* Info base — sobre a imagem */}
-          <div style={{ position: 'absolute', bottom: '20px', left: '24px', right: '24px', zIndex: 2 }}>
-            {i === 1 ? (
-              <div
-                style={{
-                  padding: '10px 14px',
-                  background: 'rgba(10,10,10,0.82)',
-                  backdropFilter: 'blur(16px)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-gold)',
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 'clamp(13px, 1.2vw, 16px)',
-                    color: 'var(--accent-gold)',
-                    lineHeight: 1.1,
-                    letterSpacing: '0.02em',
-                    marginBottom: '3px',
-                  }}
-                >
-                  {item.result}
-                </p>
-                <p
-                  style={{
-                    fontSize: '9px',
-                    color: 'var(--text-secondary)',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {item.goal} · {item.duration}
-                </p>
-                <p style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px', fontStyle: 'italic' }}>
-                  {item.name}
-                </p>
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: '8px 12px',
-                  background: 'rgba(10,10,10,0.6)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border)',
-                  display: 'inline-block',
-                }}
-              >
-                <p style={{ fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  {item.goal}
-                </p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       ))}
     </div>
@@ -432,11 +361,10 @@ function StickyCarousel() {
               color: 'var(--text-muted)',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              transition: 'opacity 0.4s',
-              opacity: activeIndex === total - 1 ? 0.4 : 1,
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {activeIndex === total - 1 ? 'Continue rolando' : 'Role para avançar'}
+            {activeIndex + 1} de {total}
           </p>
 
           <div style={{ flex: 1, height: '2px', background: 'var(--border)', borderRadius: '1px', overflow: 'hidden' }}>
@@ -450,16 +378,6 @@ function StickyCarousel() {
             />
           </div>
 
-          <p
-            style={{
-              fontSize: '11px',
-              color: 'var(--text-muted)',
-              letterSpacing: '0.1em',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {activeIndex + 1} de {total}
-          </p>
         </div>
       </div>
     </div>
@@ -541,6 +459,7 @@ export function Results() {
         @media (max-width: 768px) {
           .results-header { grid-template-columns: 1fr !important; }
           .results-divider { display: none !important; }
+          .results-header h2, .results-header p { text-align: center !important; }
           .metrics-grid { grid-template-columns: 1fr !important; }
           .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); }
           .metric-card-2 { border-bottom: none !important; }

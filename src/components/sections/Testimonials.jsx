@@ -185,7 +185,7 @@ export function Testimonials() {
           .test-grid { grid-template-columns: 1fr 1fr !important; }
         }
         @media (max-width: 768px) {
-          .test-header { grid-template-columns: 1fr !important; gap: 20px !important; }
+          .test-header { grid-template-columns: 1fr !important; gap: 20px !important; text-align: center !important; }
           .test-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>

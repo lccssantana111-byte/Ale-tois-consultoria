@@ -206,6 +206,7 @@ export function Methodology() {
         }
         @media (max-width: 768px) {
           .method-grid { gap: 36px !important; }
+          .method-header { text-align: center !important; }
           .step-item { grid-template-columns: 56px 1fr !important; gap: 16px !important; }
           .step-content { padding-bottom: 32px !important; }
         }
