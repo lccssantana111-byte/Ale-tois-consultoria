@@ -339,7 +339,7 @@ function StickyCarousel() {
               className="carousel-title"
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(56px, 5vw, 64px)',
+                fontSize: 'clamp(56px, 7vw, 96px)',
                 color: 'var(--text-primary)',
                 letterSpacing: '0.02em',
                 lineHeight: 0.95,
@@ -556,16 +556,11 @@ export function Results() {
             padding: 12px 20px 10px !important;
           }
           .carousel-title {
-            font-size: 26px !important;
-            line-height: 1 !important;
+            font-size: clamp(48px, 7vw, 96px) !important;
+            line-height: 0.95 !important;
           }
           .carousel-nav { gap: 12px !important; }
           .before-after-slot { padding: 6px 8px !important; }
-        }
-        @media (max-width: 480px) {
-          .carousel-title {
-            font-size: 18px !important;
-          }
         }
       `}</style>
     </section>
