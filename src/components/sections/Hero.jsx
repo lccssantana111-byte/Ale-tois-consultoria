@@ -441,6 +441,7 @@ export function Hero() {
             align-items: flex-end !important;
             justify-items: center !important;
             padding: 0 var(--section-px) 56px !important;
+            text-align: center !important;
           }
 
           /* Vídeo posicionado como background absoluto */
@@ -484,13 +485,20 @@ export function Hero() {
             display: none !important;
           }
 
-          /* Texto com z-index acima do vídeo, alinhado à esquerda igual à headline */
+          /* Texto centralizado no mobile */
           .hero-text-col {
             position: relative;
             z-index: 2;
-            text-align: left !important;
-            align-items: flex-start !important;
+            text-align: center !important;
+            align-items: center !important;
             width: 100%;
+          }
+          .hero-text-col p {
+            max-width: 100% !important;
+          }
+          .hero-text-col [style*="display: flex"],
+          .hero-text-col [style*="display:flex"] {
+            justify-content: center !important;
           }
         }
 
