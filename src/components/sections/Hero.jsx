@@ -4,6 +4,7 @@ import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { WA_LINK } from '../../lib/constants'
+import { getLenis } from '../../lib/lenis'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -16,104 +17,58 @@ const stagger = {
 }
 
 export function Hero() {
-  const wrapperRef = useRef(null)
-  const videoRef = useRef(null)
-  const glowRef = useRef(null)
+  const wrapperRef     = useRef(null)
+  const videoRef       = useRef(null)
+  const videoScaleRef  = useRef(null)
+  const overlayDarkRef = useRef(null)
+  const overlayTextRef = useRef(null)
 
   useEffect(() => {
-    const wrapper = wrapperRef.current
-    const video = videoRef.current
-    const glow = glowRef.current
-    if (!wrapper || !video) return
+    const lenis      = getLenis()
+    const videoFrame = videoScaleRef.current
+    const overlayDark = overlayDarkRef.current
+    const overlayText = overlayTextRef.current
+    const video      = videoRef.current
+    if (!lenis || !videoFrame || !overlayDark || !overlayText) return
 
-    // ── 1. Dimensões — lidas 1x, atualizadas via ResizeObserver (sem layout thrash no scroll)
-    let wrapperH = 0
-    let wrapperTop = 0
-    const measure = () => {
+    // Inicia playback — autoPlay cobre a maioria dos casos,
+    // mas iOS Safari exige chamada programática após mount
+    if (video) video.play().catch(() => {})
+
+    const getHeroProgress = () => {
+      const wrapper = wrapperRef.current
+      if (!wrapper) return 0
+      // lenis.scroll é a posição suavizada em px — fonte única de verdade,
+      // elimina o problema de perseguir um alvo em movimento do Lenis
       const rect = wrapper.getBoundingClientRect()
-      wrapperTop = rect.top + window.scrollY
-      wrapperH = rect.height
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(wrapper)
-
-    // ── 2. Estado do scrub — apenas refs, nenhum React state
-    let targetTime = 0
-    let smoothedTime = 0
-    let lastSeeked = -1
-    let rafId = null
-    let unlocked = false
-    let duration = 0
-
-    // ── 3. Mobile fraco — desativa scrub, reproduz vídeo normalmente
-    const isMobile = navigator.maxTouchPoints > 1 && window.innerWidth < 768
-
-    const LERP = 0.10   // ~10 frames de inércia
-    const THRESH = 0.001 // 1ms de tolerância — evita seeks desnecessários
-
-    // ── 4. RAF loop contínuo com lerp — separado do listener de scroll
-    const tick = () => {
-      rafId = requestAnimationFrame(tick)
-      if (!unlocked || !duration) return
-
-      if (isMobile) {
-        smoothedTime = targetTime
-      } else {
-        smoothedTime += (targetTime - smoothedTime) * LERP
-      }
-
-      const delta = Math.abs(smoothedTime - lastSeeked)
-      if (delta > THRESH) {
-        lastSeeked = smoothedTime
-        video.currentTime = smoothedTime
-      }
-
-      // Parallax do glow — manipulação direta de DOM, fora do React
-      if (glow && duration > 0) {
-        const progress = smoothedTime / duration
-        glow.style.transform = `translateY(${progress * 20}%)`
-      }
+      const wrapperTop = rect.top + lenis.scroll
+      const scrollable = wrapper.offsetHeight - window.innerHeight
+      if (scrollable <= 0) return 0
+      const raw = (lenis.scroll - wrapperTop) / scrollable
+      return Math.min(Math.max(raw, 0), 1)
     }
 
-    // ── 5. Scroll listener — APENAS atualiza targetTime, zero leitura de DOM
     const onScroll = () => {
-      if (!unlocked || !duration) return
-      const scrolled = window.scrollY - wrapperTop
-      const total = wrapperH - window.innerHeight
-      if (total <= 0) return
-      const progress = Math.min(Math.max(scrolled / total, 0), 1)
-      targetTime = progress * duration
+      const p = getHeroProgress()
+
+      // 1. Zoom sutil no frame — compositor only, zero layout, zero paint
+      videoFrame.style.transform = `scale(${1 + p * 0.08})`
+
+      // 2. Veil escuro — profundidade cinematográfica
+      overlayDark.style.opacity = p * 0.72
+
+      // 3. Texto reveal com delay suave (entra entre progress 0.3 → 0.6)
+      const tp = Math.min(Math.max((p - 0.3) / 0.3, 0), 1)
+      overlayText.style.opacity = tp
+      overlayText.style.transform = `translateY(${(1 - tp) * 16}px)`
     }
 
-    // ── 6. Unlock do vídeo — iOS exige interação, desktop aquece decoder
-    const unlock = () => {
-      if (unlocked) return
-      unlocked = true
-      duration = video.duration
-      onScroll()
-      if (!isMobile) {
-        video.play().then(() => video.pause()).catch(() => {})
-      }
-      rafId = requestAnimationFrame(tick)
-    }
+    // Registra no Lenis — dispara em todo tick do RAF do Lenis (60fps)
+    // Retorna função de unsubscribe
+    const unsub = lenis.on('scroll', onScroll)
+    onScroll() // estado inicial sem aguardar o primeiro scroll
 
-    if (video.readyState >= 1) {
-      unlock()
-    } else {
-      video.addEventListener('loadedmetadata', unlock, { once: true })
-      video.addEventListener('canplay', unlock, { once: true })
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-
-    return () => {
-      cancelAnimationFrame(rafId)
-      ro.disconnect()
-      window.removeEventListener('scroll', onScroll)
-      video.removeEventListener('loadedmetadata', unlock)
-      video.removeEventListener('canplay', unlock)
-    }
+    return () => unsub()
   }, [])
 
   return (
@@ -134,14 +89,12 @@ export function Hero() {
           overflow: 'clip', /* clip não quebra position:sticky no iOS Safari, diferente de hidden */
         }}
       >
-        {/* Glow de fundo com parallax — controlado via RAF, sem Framer Motion */}
+        {/* Glow de fundo — estático, sem parallax */}
         <div
-          ref={glowRef}
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: '-20%',
-            willChange: 'transform',
             background: `
               radial-gradient(ellipse 55% 65% at 72% 50%, rgba(201,168,76,0.08) 0%, transparent 65%),
               radial-gradient(ellipse 40% 40% at 18% 80%, rgba(201,168,76,0.04) 0%, transparent 60%)
@@ -300,8 +253,9 @@ export function Hero() {
                   }}
                 />
 
-                {/* Vídeo — sincronizado com scroll */}
+                {/* Vídeo — autoplay + loop, browser controla decoding sem seeks */}
                 <div
+                  ref={videoScaleRef}
                   className="hero-video-frame"
                   style={{
                     position: 'relative',
@@ -314,15 +268,18 @@ export function Hero() {
                     border: '1px solid var(--border)',
                     boxShadow: '0 0 60px rgba(201,168,76,0.15)',
                     background: '#0a0a0a',
+                    willChange: 'transform',
+                    transformOrigin: 'center center',
                   }}
                 >
                   <video
                     ref={videoRef}
                     src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.webm"
+                    autoPlay
                     muted
+                    loop
                     playsInline
                     preload="auto"
-
                     style={{
                       width: '100%',
                       height: '100%',
@@ -331,7 +288,52 @@ export function Hero() {
                       display: 'block',
                     }}
                   />
-                  {/* Overlay gradiente sutil */}
+
+                  {/* Veil escuro — scroll-driven, compositor only */}
+                  <div
+                    ref={overlayDarkRef}
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: '#0a0a0a',
+                      opacity: 0,
+                      willChange: 'opacity',
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                    }}
+                  />
+
+                  {/* Texto cinematográfico — revela com delay no scroll */}
+                  <div
+                    ref={overlayTextRef}
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'center',
+                      paddingBottom: '10%',
+                      opacity: 0,
+                      willChange: 'opacity, transform',
+                      pointerEvents: 'none',
+                      zIndex: 2,
+                    }}
+                  >
+                    <p style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 'clamp(14px, 2vw, 26px)',
+                      letterSpacing: '0.3em',
+                      color: 'rgba(201,168,76,0.85)',
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                    }}>
+                      Método Comprovado
+                    </p>
+                  </div>
+
+                  {/* Overlay gradiente sutil — acima dos novos overlays */}
                   <div
                     aria-hidden="true"
                     className="hero-video-overlay"
@@ -343,6 +345,7 @@ export function Hero() {
                         linear-gradient(to right, transparent 70%, rgba(10,10,10,0.3) 100%)
                       `,
                       pointerEvents: 'none',
+                      zIndex: 3,
                     }}
                   />
                 </div>
