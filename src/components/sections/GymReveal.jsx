@@ -178,7 +178,7 @@ export function GymReveal() {
   }, [])
 
   return (
-    <div ref={wrapperRef} id="legado" style={{ height: '420vh', position: 'relative' }}>
+    <div ref={wrapperRef} id="legado" className="gym-wrapper" style={{ height: '420vh', position: 'relative' }}>
 
       {/* ── DESKTOP: split 50/50 ── */}
       <div className="gym-sticky gym-sticky--desktop">
@@ -230,19 +230,20 @@ export function GymReveal() {
         </div>
       </div>
 
-      {/* ── MOBILE: canvas fullscreen + texto sobreposto ── */}
-      <div className="gym-sticky gym-sticky--mobile">
+      {/* ── MOBILE: frame natural 16:9 + texto abaixo ── */}
+      <div className="gym-mobile-wrap">
 
-        {/* Canvas cobre 100% da tela */}
-        <canvas ref={canvasMobile} className="gym-canvas-mobile" />
+        {/* Canvas 16:9 sticky — fica fixo no topo enquanto o texto rola */}
+        <div className="gym-mobile-frame-sticky">
+          <canvas ref={canvasMobile} className="gym-canvas-mobile" />
+          <div className="gym-frame-overlay" aria-hidden="true" />
+          <div className="gym-frame-border" style={{ borderRadius: 0 }} aria-hidden="true" />
+        </div>
 
-        {/* Gradiente escuro na base para legibilidade */}
-        <div className="gym-mobile-overlay" aria-hidden="true" />
-
-        {/* Texto na base, centralizado */}
-        <div className="gym-mobile-text">
+        {/* Texto abaixo do frame — cada beat em bloco separado */}
+        <div className="gym-mobile-beats">
           {BEATS.map((beat, i) => (
-            <div key={i} ref={beatMobileRefs[i]} className="gym-beat gym-beat--mobile" style={{ opacity: 0, transform: 'translateY(22px)' }}>
+            <div key={i} className="gym-mobile-beat-block">
               <p className="gym-beat-eyebrow gym-beat-eyebrow--mobile">{beat.eyebrow}</p>
               <h2 className="gym-beat-title gym-beat-title--mobile">
                 {beat.title.split('\n').map((line, j) => (
@@ -280,6 +281,7 @@ export function GymReveal() {
           grid-template-columns: 1fr 1fr;
         }
         .gym-sticky--mobile { display: none; }
+        .gym-mobile-wrap { display: none; }
 
         /* ── Coluna esquerda: frame ── */
         .gym-frame-col {
@@ -411,80 +413,96 @@ export function GymReveal() {
           text-transform: uppercase; color: #888;
         }
 
-        /* ── Mobile: layout próprio ── */
+        /* ── Mobile ── */
         @media (max-width: 768px) {
+          /* Wrapper volta ao fluxo normal — sem altura fixa */
+          .gym-wrapper { height: auto !important; }
+
+          /* Esconde desktop, mostra mobile */
           .gym-sticky--desktop { display: none; }
-          .gym-sticky--mobile {
-            display: block;
+          .gym-mobile-wrap { display: block; }
+
+          /* Frame sticky no topo — 16:9 natural, cobre toda a largura */
+          .gym-mobile-frame-sticky {
             position: sticky;
+            top: 0;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            z-index: 1;
+            overflow: hidden;
+            background: #000;
           }
 
-          /* Canvas fullscreen absoluto */
+          /* Canvas preenche o wrapper 16:9 sem distorção */
           .gym-canvas-mobile {
-            position: absolute;
-            inset: 0;
+            display: block;
             width: 100%;
             height: 100%;
-            display: block;
           }
 
-          /* Gradiente pesado na base */
-          .gym-mobile-overlay {
-            position: absolute; inset: 0;
-            background:
-              linear-gradient(to bottom,
-                rgba(0,0,0,0.2) 0%,
-                transparent 25%,
-                transparent 45%,
-                rgba(0,0,0,0.75) 68%,
-                rgba(0,0,0,0.95) 100%
-              );
-            pointer-events: none;
+          /* Texto abaixo do frame — fundo escuro, padding generoso */
+          .gym-mobile-beats {
+            background: var(--bg-primary);
+            padding: 0;
           }
 
-          /* Texto centralizado na base */
-          .gym-mobile-text {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            padding: 0 28px 48px;
-            display: flex; align-items: flex-end;
+          /* Cada beat é um bloco separado com borda divisória */
+          .gym-mobile-beat-block {
+            padding: 36px 24px 32px;
+            border-bottom: 1px solid var(--border);
           }
-
-          .gym-beat--mobile {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            text-align: center;
-          }
+          .gym-mobile-beat-block:last-child { border-bottom: none; }
 
           .gym-beat-eyebrow--mobile {
             font-size: 11px;
-            margin-bottom: 16px;
-            justify-content: center;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent-gold);
+            font-family: var(--font-body);
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
           }
-          .gym-beat-eyebrow--mobile::before { display: none; }
+          .gym-beat-eyebrow--mobile::before {
+            content: '';
+            display: block;
+            width: 20px; height: 1px;
+            background: var(--accent-gold);
+            flex-shrink: 0;
+          }
 
           .gym-beat-title--mobile {
-            font-size: clamp(48px, 13vw, 72px);
+            font-family: var(--font-display);
+            font-size: clamp(48px, 13vw, 64px);
+            line-height: 0.93;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
             margin-bottom: 16px;
-            align-items: center;
-            text-shadow: 0 2px 24px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
           }
 
           .gym-beat-body--mobile {
-            font-size: clamp(16px, 1.5vw, 19px);
+            font-family: var(--font-body);
+            font-size: 16px;
             line-height: 1.7;
-            margin-bottom: 24px;
-            max-width: 320px;
-            text-shadow: 0 1px 12px rgba(0,0,0,0.9);
+            color: #C8C8C8;
+            margin-bottom: 20px;
           }
 
           .gym-beat-cta--mobile {
-            justify-content: center;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-body);
             font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            text-decoration: none;
           }
         }
       `}</style>
