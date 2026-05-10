@@ -164,10 +164,26 @@ export function GymReveal() {
     else window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
 
+    // Mobile: anima cada beat quando entra na viewport via IntersectionObserver
+    let io = null
+    if (isMobile) {
+      io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = 1
+            entry.target.style.transform = 'translateY(0)'
+            io.unobserve(entry.target)
+          }
+        })
+      }, { threshold: 0.15 })
+      beatMobileRefs.forEach(r => { if (r.current) io.observe(r.current) })
+    }
+
     return () => {
       clearTimeout(deferred)
       clearTimeout(layoutTimer)
       ro.disconnect()
+      if (io) io.disconnect()
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (unsub) unsub()
       else window.removeEventListener('scroll', onScroll)
@@ -243,7 +259,7 @@ export function GymReveal() {
         {/* Texto abaixo do frame — cada beat em bloco separado */}
         <div className="gym-mobile-beats">
           {BEATS.map((beat, i) => (
-            <div key={i} className="gym-mobile-beat-block">
+            <div key={i} ref={beatMobileRefs[i]} className="gym-mobile-beat-block" style={{ opacity: 0, transform: 'translateY(24px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
               <p className="gym-beat-eyebrow gym-beat-eyebrow--mobile">{beat.eyebrow}</p>
               <h2 className="gym-beat-title gym-beat-title--mobile">
                 {beat.title.split('\n').map((line, j) => (
@@ -440,8 +456,10 @@ export function GymReveal() {
             height: 100%;
           }
 
-          /* Texto abaixo do frame — fundo escuro, padding generoso */
+          /* Texto abaixo do frame — acima do sticky em z-index */
           .gym-mobile-beats {
+            position: relative;
+            z-index: 2;
             background: var(--bg-primary);
             padding: 0;
           }
