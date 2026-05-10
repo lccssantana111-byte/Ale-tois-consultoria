@@ -1,10 +1,9 @@
-import { motion, useTransform, useMotionValue } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useRef, useEffect } from 'react'
 import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { WA_LINK } from '../../lib/constants'
-import { getLenis } from '../../lib/lenis'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -19,73 +18,86 @@ const stagger = {
 export function Hero() {
   const wrapperRef = useRef(null)
   const videoRef = useRef(null)
-
-  const scrollProgress = useMotionValue(0)
-  const bgY = useTransform(scrollProgress, [0, 1], ['0%', '20%'])
+  const glowRef = useRef(null)
 
   useEffect(() => {
     const wrapper = wrapperRef.current
     const video = videoRef.current
+    const glow = glowRef.current
     if (!wrapper || !video) return
 
-    let unlocked = false
-
-    // Cache do offsetTop para evitar layout thrash no handler de scroll
-    let wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY
-    const onResize = () => {
-      wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY
+    // ── 1. Dimensões — lidas 1x, atualizadas via ResizeObserver (sem layout thrash no scroll)
+    let wrapperH = 0
+    let wrapperTop = 0
+    const measure = () => {
+      const rect = wrapper.getBoundingClientRect()
+      wrapperTop = rect.top + window.scrollY
+      wrapperH = rect.height
     }
-    window.addEventListener('resize', onResize, { passive: true })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(wrapper)
 
-    const getProgress = () => {
-      const total = wrapper.offsetHeight - window.innerHeight
-      if (total <= 0) return 0
-      const scrolled = window.scrollY - wrapperTop
-      return Math.min(Math.max(scrolled / total, 0), 1)
-    }
-
+    // ── 2. Estado do scrub — apenas refs, nenhum React state
+    let targetTime = 0
+    let smoothedTime = 0
+    let lastSeeked = -1
     let rafId = null
-    let lastApplied = -1
-    let targetTime = -1
+    let unlocked = false
+    let duration = 0
 
-    const applySeek = () => {
-      if (!unlocked) return
-      const dur = video.duration
-      if (!dur || isNaN(dur)) return
-      const progress = getProgress()
-      scrollProgress.set(progress)
-      const target = progress * dur
+    // ── 3. Mobile fraco — desativa scrub, reproduz vídeo normalmente
+    const isMobile = navigator.maxTouchPoints > 1 && window.innerWidth < 768
 
-      if (Math.abs(target - lastApplied) < 1 / 60) return  // nada mudou
+    const LERP = 0.10   // ~10 frames de inércia
+    const THRESH = 0.001 // 1ms de tolerância — evita seeks desnecessários
 
-      targetTime = target
+    // ── 4. RAF loop contínuo com lerp — separado do listener de scroll
+    const tick = () => {
+      rafId = requestAnimationFrame(tick)
+      if (!unlocked || !duration) return
 
-      // Agenda um único RAF se não houver um pendente
-      if (rafId) return
-      rafId = requestAnimationFrame(() => {
-        rafId = null
-        if (Math.abs(targetTime - lastApplied) < 1 / 60) return
-        lastApplied = targetTime
-        video.currentTime = targetTime
-      })
+      if (isMobile) {
+        smoothedTime = targetTime
+      } else {
+        smoothedTime += (targetTime - smoothedTime) * LERP
+      }
+
+      const delta = Math.abs(smoothedTime - lastSeeked)
+      if (delta > THRESH) {
+        lastSeeked = smoothedTime
+        video.currentTime = smoothedTime
+      }
+
+      // Parallax do glow — manipulação direta de DOM, fora do React
+      if (glow && duration > 0) {
+        const progress = smoothedTime / duration
+        glow.style.transform = `translateY(${progress * 20}%)`
+      }
     }
 
-    // onSeeking só existe durante a janela play()→pause() do unlock.
-    const onSeeking = () => video.pause()
-    video.addEventListener('seeking', onSeeking)
-    let seekingCleanup = () => video.removeEventListener('seeking', onSeeking)
+    // ── 5. Scroll listener — APENAS atualiza targetTime, zero leitura de DOM
+    const onScroll = () => {
+      if (!unlocked || !duration) return
+      const scrolled = window.scrollY - wrapperTop
+      const total = wrapperH - window.innerHeight
+      if (total <= 0) return
+      const progress = Math.min(Math.max(scrolled / total, 0), 1)
+      targetTime = progress * duration
+    }
 
+    // ── 6. Unlock do vídeo — iOS exige interação, desktop aquece decoder
     const unlock = () => {
       if (unlocked) return
-      // Libera seek imediatamente — currentTime funciona sem play() no iOS
-      seekingCleanup?.(); seekingCleanup = null
       unlocked = true
-      applySeek()
-      // Tenta play()+pause() para aquecer o decoder no desktop; iOS rejeita silenciosamente
-      video.play().then(() => { video.pause() }).catch(() => {})
+      duration = video.duration
+      onScroll()
+      if (!isMobile) {
+        video.play().then(() => video.pause()).catch(() => {})
+      }
+      rafId = requestAnimationFrame(tick)
     }
 
-    // loadedmetadata + canplay como fallback (iOS pode disparar um ou outro)
     if (video.readyState >= 1) {
       unlock()
     } else {
@@ -93,26 +105,16 @@ export function Hero() {
       video.addEventListener('canplay', unlock, { once: true })
     }
 
-    const lenis = getLenis()
-    if (lenis) {
-      lenis.on('scroll', applySeek)
-    } else {
-      window.addEventListener('scroll', applySeek, { passive: true })
-    }
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     return () => {
       cancelAnimationFrame(rafId)
-      seekingCleanup?.()
+      ro.disconnect()
+      window.removeEventListener('scroll', onScroll)
       video.removeEventListener('loadedmetadata', unlock)
       video.removeEventListener('canplay', unlock)
-      if (lenis) {
-        lenis.off('scroll', applySeek)
-      } else {
-        window.removeEventListener('scroll', applySeek)
-      }
-      window.removeEventListener('resize', onResize)
     }
-  }, [scrollProgress])
+  }, [])
 
   return (
     <div
@@ -132,13 +134,14 @@ export function Hero() {
           overflow: 'clip', /* clip não quebra position:sticky no iOS Safari, diferente de hidden */
         }}
       >
-        {/* Glow de fundo com parallax */}
-        <motion.div
+        {/* Glow de fundo com parallax — controlado via RAF, sem Framer Motion */}
+        <div
+          ref={glowRef}
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: '-20%',
-            y: bgY,
+            willChange: 'transform',
             background: `
               radial-gradient(ellipse 55% 65% at 72% 50%, rgba(201,168,76,0.08) 0%, transparent 65%),
               radial-gradient(ellipse 40% 40% at 18% 80%, rgba(201,168,76,0.04) 0%, transparent 60%)
@@ -354,8 +357,7 @@ export function Hero() {
                     position: 'absolute',
                     bottom: '10%',
                     left: '-24px',
-                    background: 'rgba(26,26,26,0.92)',
-                    backdropFilter: 'blur(20px)',
+                    background: 'rgba(26,26,26,0.96)',
                     border: '1px solid var(--border-gold)',
                     borderRadius: 'var(--radius-md)',
                     padding: '14px 20px',
@@ -390,12 +392,9 @@ export function Hero() {
             color: 'var(--text-muted)',
           }}
         >
-          <motion.div
-            animate={{ y: [0, 5, 0] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          >
+          <div className="hero-scroll-indicator">
             <ChevronDown size={16} />
-          </motion.div>
+          </div>
         </motion.div>
       </div>
 
@@ -403,6 +402,14 @@ export function Hero() {
         @keyframes shimmer {
           0%   { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+
+        @keyframes bounceY {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(5px); }
+        }
+        .hero-scroll-indicator {
+          animation: bounceY 1.8s ease-in-out infinite;
         }
 
         /* ── Tablet: empilha em 1 coluna ── */
