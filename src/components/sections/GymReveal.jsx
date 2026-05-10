@@ -478,15 +478,16 @@ export function GymReveal() {
           }
           .gym-beat-eyebrow::before { display: none !important; }
           .gym-beat-title {
-            font-size: clamp(34px, 8.5vw, 50px) !important;
-            margin-bottom: 14px !important;
+            font-size: clamp(48px, 12vw, 68px) !important;
+            margin-bottom: 18px !important;
             align-items: center !important;
           }
           .gym-beat-title-line { display: inline !important; }
           .gym-beat-title-line:not(:last-child)::after { content: ' ' !important; }
           .gym-beat-body {
-            font-size: 14px !important;
-            margin-bottom: 20px !important;
+            font-size: 16px !important;
+            line-height: 1.65 !important;
+            margin-bottom: 24px !important;
             max-width: 100% !important;
             text-align: center !important;
           }
