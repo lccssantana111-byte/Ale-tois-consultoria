@@ -312,7 +312,7 @@ export function Hero() {
                 >
                   <video
                     ref={videoRef}
-                    src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.mp4"
+                    src="/media/transform-this-image-into-a-cinematic-3d-animation-_1_.webm"
                     muted
                     playsInline
                     preload="auto"
