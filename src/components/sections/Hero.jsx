@@ -53,21 +53,26 @@ export function Hero() {
       video.currentTime = progress * dur
     }
 
+    // onSeeking só existe durante a janela play()→pause() do unlock.
+    // Removê-lo após o unlock evita que pause() interfira no scroll-scrubbing.
+    const onSeeking = () => video.pause()
+    video.addEventListener('seeking', onSeeking)
+    let seekingCleanup = () => video.removeEventListener('seeking', onSeeking)
+
     const unlock = () => {
       if (unlocked) return
       video.play().then(() => {
         video.pause()
+        seekingCleanup?.(); seekingCleanup = null
         unlocked = true
         applySeek()
       }).catch(() => {
+        seekingCleanup?.(); seekingCleanup = null
         unlocked = true
-        applySeek()
+        // No mobile play() pode ser rejeitado — aplicar seek no próximo frame
+        requestAnimationFrame(applySeek)
       })
     }
-
-    // Pausa imediatamente se o browser tentar reproduzir durante seek
-    const onSeeking = () => { if (unlocked) video.pause() }
-    video.addEventListener('seeking', onSeeking)
 
     if (video.readyState >= 1) {
       unlock()
@@ -75,8 +80,6 @@ export function Hero() {
       video.addEventListener('loadedmetadata', unlock, { once: true })
     }
 
-    // Integra com Lenis para que o seek ocorra uma vez por frame (RAF-synced),
-    // evitando seeks excessivos do smooth scroll que travam o vídeo
     const lenis = getLenis()
     if (lenis) {
       lenis.on('scroll', applySeek)
@@ -85,6 +88,7 @@ export function Hero() {
     }
 
     return () => {
+      seekingCleanup?.()
       if (lenis) {
         lenis.off('scroll', applySeek)
       } else {
@@ -92,7 +96,6 @@ export function Hero() {
       }
       window.removeEventListener('resize', onResize)
       video.removeEventListener('loadedmetadata', unlock)
-      video.removeEventListener('seeking', onSeeking)
     }
   }, [scrollProgress])
 
@@ -301,6 +304,7 @@ export function Hero() {
                     muted
                     playsInline
                     preload="auto"
+                    onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0 }}
                     style={{
                       width: '100%',
                       height: '100%',
