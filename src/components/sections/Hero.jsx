@@ -68,30 +68,26 @@ export function Hero() {
     video.addEventListener('seeked', onSeeked)
 
     // onSeeking só existe durante a janela play()→pause() do unlock.
-    // Removê-lo após o unlock evita que pause() interfira no scroll-scrubbing.
     const onSeeking = () => video.pause()
     video.addEventListener('seeking', onSeeking)
     let seekingCleanup = () => video.removeEventListener('seeking', onSeeking)
 
     const unlock = () => {
       if (unlocked) return
-      video.play().then(() => {
-        video.pause()
-        seekingCleanup?.(); seekingCleanup = null
-        unlocked = true
-        applySeek()
-      }).catch(() => {
-        seekingCleanup?.(); seekingCleanup = null
-        unlocked = true
-        // No mobile play() pode ser rejeitado — aplicar seek no próximo frame
-        requestAnimationFrame(applySeek)
-      })
+      // Libera seek imediatamente — currentTime funciona sem play() no iOS
+      seekingCleanup?.(); seekingCleanup = null
+      unlocked = true
+      applySeek()
+      // Tenta play()+pause() para aquecer o decoder no desktop; iOS rejeita silenciosamente
+      video.play().then(() => { video.pause() }).catch(() => {})
     }
 
+    // loadedmetadata + canplay como fallback (iOS pode disparar um ou outro)
     if (video.readyState >= 1) {
       unlock()
     } else {
       video.addEventListener('loadedmetadata', unlock, { once: true })
+      video.addEventListener('canplay', unlock, { once: true })
     }
 
     const lenis = getLenis()
@@ -104,13 +100,14 @@ export function Hero() {
     return () => {
       seekingCleanup?.()
       video.removeEventListener('seeked', onSeeked)
+      video.removeEventListener('loadedmetadata', unlock)
+      video.removeEventListener('canplay', unlock)
       if (lenis) {
         lenis.off('scroll', applySeek)
       } else {
         window.removeEventListener('scroll', applySeek)
       }
       window.removeEventListener('resize', onResize)
-      video.removeEventListener('loadedmetadata', unlock)
     }
   }, [scrollProgress])
 
@@ -319,7 +316,7 @@ export function Hero() {
                     muted
                     playsInline
                     preload="auto"
-                    onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0 }}
+
                     style={{
                       width: '100%',
                       height: '100%',
