@@ -4,6 +4,7 @@ import { MessageCircle, ChevronDown } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { WA_LINK } from '../../lib/constants'
+import { getLenis } from '../../lib/lenis'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -29,10 +30,17 @@ export function Hero() {
 
     let unlocked = false
 
+    // Cache do offsetTop para evitar layout thrash no handler de scroll
+    let wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY
+    const onResize = () => {
+      wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY
+    }
+    window.addEventListener('resize', onResize, { passive: true })
+
     const getProgress = () => {
       const total = wrapper.offsetHeight - window.innerHeight
       if (total <= 0) return 0
-      const scrolled = window.scrollY - wrapper.offsetTop
+      const scrolled = window.scrollY - wrapperTop
       return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
@@ -45,9 +53,6 @@ export function Hero() {
       video.currentTime = progress * dur
     }
 
-    // Desbloqueia seek: play() seguido de pause() imediato.
-    // O seek é aplicado DENTRO do .then() para garantir que o
-    // browser não reinicia a reprodução após o pause.
     const unlock = () => {
       if (unlocked) return
       video.play().then(() => {
@@ -55,13 +60,12 @@ export function Hero() {
         unlocked = true
         applySeek()
       }).catch(() => {
-        // Fallback para browsers que rejeitam play() (raro com muted)
         unlocked = true
         applySeek()
       })
     }
 
-    // Escuta seeking para pausar imediatamente se o browser tentar reproduzir
+    // Pausa imediatamente se o browser tentar reproduzir durante seek
     const onSeeking = () => { if (unlocked) video.pause() }
     video.addEventListener('seeking', onSeeking)
 
@@ -71,10 +75,22 @@ export function Hero() {
       video.addEventListener('loadedmetadata', unlock, { once: true })
     }
 
-    window.addEventListener('scroll', applySeek, { passive: true })
+    // Integra com Lenis para que o seek ocorra uma vez por frame (RAF-synced),
+    // evitando seeks excessivos do smooth scroll que travam o vídeo
+    const lenis = getLenis()
+    if (lenis) {
+      lenis.on('scroll', applySeek)
+    } else {
+      window.addEventListener('scroll', applySeek, { passive: true })
+    }
 
     return () => {
-      window.removeEventListener('scroll', applySeek)
+      if (lenis) {
+        lenis.off('scroll', applySeek)
+      } else {
+        window.removeEventListener('scroll', applySeek)
+      }
+      window.removeEventListener('resize', onResize)
       video.removeEventListener('loadedmetadata', unlock)
       video.removeEventListener('seeking', onSeeking)
     }
