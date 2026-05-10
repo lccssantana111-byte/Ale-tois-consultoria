@@ -502,7 +502,7 @@ export function Hero() {
           .hero-text-col [style*="display:flex"] {
             justify-content: center !important;
           }
-          .hero-wrapper { height: 175vh !important; }
+          .hero-wrapper { height: 185vh !important; }
         }
 
         @media (max-width: 480px) {
