@@ -44,14 +44,28 @@ export function Hero() {
       return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
+    let lastSeekTime = -1
+    let seekPending = false
+
     const applySeek = () => {
       if (!unlocked) return
       const dur = video.duration
       if (!dur || isNaN(dur)) return
       const progress = getProgress()
       scrollProgress.set(progress)
-      video.currentTime = progress * dur
+      const target = progress * dur
+
+      // Só busca se mudou pelo menos 1 frame (~30fps) e o decoder não está ocupado
+      if (Math.abs(target - lastSeekTime) < 1 / 30) return
+      if (seekPending) return
+
+      seekPending = true
+      lastSeekTime = target
+      video.currentTime = target
     }
+
+    const onSeeked = () => { seekPending = false }
+    video.addEventListener('seeked', onSeeked)
 
     // onSeeking só existe durante a janela play()→pause() do unlock.
     // Removê-lo após o unlock evita que pause() interfira no scroll-scrubbing.
@@ -89,6 +103,7 @@ export function Hero() {
 
     return () => {
       seekingCleanup?.()
+      video.removeEventListener('seeked', onSeeked)
       if (lenis) {
         lenis.off('scroll', applySeek)
       } else {
