@@ -27,6 +27,8 @@ export function Hero() {
     const video = videoRef.current
     if (!wrapper || !video) return
 
+    let unlocked = false
+
     const getProgress = () => {
       const total = wrapper.offsetHeight - window.innerHeight
       if (total <= 0) return 0
@@ -34,31 +36,34 @@ export function Hero() {
       return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
-    const doSeek = (target) => {
-      try {
-        if (typeof video.fastSeek === 'function') video.fastSeek(target)
-        else video.currentTime = target
-      } catch (_) {}
-    }
-
     const applySeek = () => {
+      if (!unlocked) return
       const dur = video.duration
       if (!dur || isNaN(dur)) return
       const progress = getProgress()
       scrollProgress.set(progress)
-      doSeek(progress * dur)
+      video.currentTime = progress * dur
     }
 
-    // iOS Safari só permite seek após play() ter sido chamado.
-    // play()+pause() imediato desbloqueia o seek sem reproduzir o vídeo.
+    // Desbloqueia seek: play() seguido de pause() imediato.
+    // O seek é aplicado DENTRO do .then() para garantir que o
+    // browser não reinicia a reprodução após o pause.
     const unlock = () => {
+      if (unlocked) return
       video.play().then(() => {
         video.pause()
+        unlocked = true
         applySeek()
       }).catch(() => {
+        // Fallback para browsers que rejeitam play() (raro com muted)
+        unlocked = true
         applySeek()
       })
     }
+
+    // Escuta seeking para pausar imediatamente se o browser tentar reproduzir
+    const onSeeking = () => { if (unlocked) video.pause() }
+    video.addEventListener('seeking', onSeeking)
 
     if (video.readyState >= 1) {
       unlock()
@@ -71,6 +76,7 @@ export function Hero() {
     return () => {
       window.removeEventListener('scroll', applySeek)
       video.removeEventListener('loadedmetadata', unlock)
+      video.removeEventListener('seeking', onSeeking)
     }
   }, [scrollProgress])
 
