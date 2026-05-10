@@ -44,8 +44,25 @@ export function Hero() {
       return Math.min(Math.max(scrolled / total, 0), 1)
     }
 
-    let lastSeekTime = -1
-    let seekPending = false
+    let rafId = null
+    let pendingTarget = -1
+    let lastApplied = -1
+
+    // RAF loop — aplica o seek mais recente a cada frame do browser
+    const rafLoop = () => {
+      if (unlocked && pendingTarget >= 0) {
+        const dur = video.duration
+        if (dur && !isNaN(dur)) {
+          const delta = Math.abs(pendingTarget - lastApplied)
+          if (delta > 1 / 60) {           // só seek se mudou mais de 1 frame
+            lastApplied = pendingTarget
+            video.currentTime = pendingTarget
+          }
+        }
+      }
+      rafId = requestAnimationFrame(rafLoop)
+    }
+    rafId = requestAnimationFrame(rafLoop)
 
     const applySeek = () => {
       if (!unlocked) return
@@ -53,19 +70,8 @@ export function Hero() {
       if (!dur || isNaN(dur)) return
       const progress = getProgress()
       scrollProgress.set(progress)
-      const target = progress * dur
-
-      // Só busca se mudou pelo menos 1 frame (~30fps) e o decoder não está ocupado
-      if (Math.abs(target - lastSeekTime) < 1 / 30) return
-      if (seekPending) return
-
-      seekPending = true
-      lastSeekTime = target
-      video.currentTime = target
+      pendingTarget = progress * dur   // só atualiza o alvo — o RAF aplica
     }
-
-    const onSeeked = () => { seekPending = false }
-    video.addEventListener('seeked', onSeeked)
 
     // onSeeking só existe durante a janela play()→pause() do unlock.
     const onSeeking = () => video.pause()
@@ -98,8 +104,8 @@ export function Hero() {
     }
 
     return () => {
+      cancelAnimationFrame(rafId)
       seekingCleanup?.()
-      video.removeEventListener('seeked', onSeeked)
       video.removeEventListener('loadedmetadata', unlock)
       video.removeEventListener('canplay', unlock)
       if (lenis) {
