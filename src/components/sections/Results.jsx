@@ -339,7 +339,7 @@ function StickyCarousel() {
               className="carousel-title"
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(36px, 5vw, 64px)',
+                fontSize: 'clamp(56px, 5vw, 64px)',
                 color: 'var(--text-primary)',
                 letterSpacing: '0.02em',
                 lineHeight: 0.95,
