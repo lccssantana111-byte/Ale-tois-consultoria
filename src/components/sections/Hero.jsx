@@ -78,21 +78,23 @@ export function Hero() {
       for (let j = EAGER; j < frameCount; j++) loadImage(j)
     }, 0)
 
-    // Canvas sizing via ResizeObserver no container
-    // O buffer é em pixels físicos (DPR), o CSS mantém tamanho lógico.
-    // drawFrame recebe w/h em pixels físicos — sem scale() no ctx.
+    // Canvas sizing — usa rect do container com fallback para viewport
     function resizeCanvas() {
       const rect = videoFrame.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return
+      const w = rect.width  || window.innerWidth
+      const h = rect.height || window.innerHeight
       const dpr = window.devicePixelRatio || 1
-      canvas.width  = Math.round(rect.width  * dpr)
-      canvas.height = Math.round(rect.height * dpr)
+      canvas.width  = Math.round(w * dpr)
+      canvas.height = Math.round(h * dpr)
       renderCurrentFrame()
     }
 
     const ro = new ResizeObserver(resizeCanvas)
     ro.observe(videoFrame)
     resizeCanvas()
+    // Segundo resize após layout — necessário no iOS Safari onde
+    // getBoundingClientRect() retorna 0 no primeiro tick de mount
+    const layoutTimer = setTimeout(resizeCanvas, 100)
 
     const getHeroProgress = () => {
       const wrapper = wrapperRef.current
@@ -129,6 +131,7 @@ export function Hero() {
 
     return () => {
       clearTimeout(deferredTimer)
+      clearTimeout(layoutTimer)
       ro.disconnect()
       if (unsub) unsub()
       else window.removeEventListener('scroll', onScroll)
