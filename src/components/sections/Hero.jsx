@@ -202,7 +202,7 @@ export function Hero() {
                   transition={{ duration: 0.55 }}
                   style={{
                     fontFamily: 'var(--font-display)',
-                    fontSize: 'clamp(52px, 7.5vw, 110px)',
+                    fontSize: 'clamp(72px, 7.5vw, 110px)',
                     lineHeight: 0.93,
                     letterSpacing: '0.02em',
                     color: 'var(--text-primary)',
