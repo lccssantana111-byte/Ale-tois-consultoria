@@ -14,6 +14,7 @@ export function Navbar() {
 
   return (
     <motion.nav
+      className="site-nav"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -84,11 +85,7 @@ export function Navbar() {
 
       <style>{`
         @media (max-width: 768px) {
-          .nav-instagram { display: none !important; }
-          .nav-cta { padding: 8px 14px !important; font-size: 11px !important; }
-        }
-        @media (max-width: 380px) {
-          .nav-cta span { display: none; }
+          .site-nav { display: none !important; }
         }
       `}</style>
     </motion.nav>
