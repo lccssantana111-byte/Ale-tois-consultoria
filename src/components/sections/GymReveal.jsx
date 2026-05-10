@@ -291,13 +291,13 @@ export function GymReveal() {
           background: #000;
         }
 
-        /* ── Desktop: mostra split, esconde mobile ── */
+        /* ── Desktop: split 50/50 ── */
         .gym-sticky--desktop {
           display: grid;
           grid-template-columns: 1fr 1fr;
         }
         .gym-sticky--mobile { display: none; }
-        .gym-mobile-wrap { display: none; }
+        .gym-mobile-wrap    { display: none; }
 
         /* ── Coluna esquerda: frame ── */
         .gym-frame-col {
@@ -429,99 +429,56 @@ export function GymReveal() {
           text-transform: uppercase; color: #888;
         }
 
-        /* ── Mobile ── */
+        /* ── Mobile: mesmo sticky, grid empilhado ── */
         @media (max-width: 768px) {
-          /* Wrapper volta ao fluxo normal — sem altura fixa */
-          .gym-wrapper { height: auto !important; }
+          /* Mesma altura de scroll */
+          .gym-wrapper { height: 420vh !important; }
 
-          /* Esconde desktop, mostra mobile */
-          .gym-sticky--desktop { display: none; }
-          .gym-mobile-wrap { display: block; }
-
-          /* Frame sticky no topo — 16:9 natural, cobre toda a largura */
-          .gym-mobile-frame-sticky {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            z-index: 1;
-            overflow: hidden;
-            background: #000;
+          /* Grid vira 1 coluna: frame em cima (45vh), texto embaixo (55vh) */
+          .gym-sticky--desktop {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: 45vh 55vh !important;
           }
 
-          /* Canvas preenche o wrapper 16:9 sem distorção */
-          .gym-canvas-mobile {
-            display: block;
-            width: 100%;
-            height: 100%;
+          /* Frame col: sem padding lateral, canvas preenche toda a largura */
+          .gym-frame-col {
+            padding: 0 !important;
+            gap: 0 !important;
+            align-items: stretch !important;
           }
+          .gym-canvas-wrap {
+            width: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            aspect-ratio: unset !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            height: 100% !important;
+          }
+          .gym-frame-footer  { display: none !important; }
+          .gym-frame-border  { border-radius: 0 !important; }
 
-          /* Texto abaixo do frame — acima do sticky em z-index */
-          .gym-mobile-beats {
-            position: relative;
-            z-index: 2;
-            background: var(--bg-primary);
-            padding: 0;
+          /* Coluna de texto: padding ajustado, sem borda lateral */
+          .gym-text-col {
+            padding: 20px 24px 24px !important;
+            border-left: none !important;
+            border-top: 1px solid rgba(255,255,255,0.08) !important;
+            justify-content: center !important;
           }
+          .gym-progress-line { display: none !important; }
+          .gym-signature     { display: none !important; }
 
-          /* Cada beat é um bloco separado com borda divisória */
-          .gym-mobile-beat-block {
-            padding: 36px 24px 32px;
-            border-bottom: 1px solid var(--border);
+          /* Beats com tipografia mobile */
+          .gym-beat-title {
+            font-size: clamp(36px, 9vw, 52px) !important;
+            margin-bottom: 14px !important;
           }
-          .gym-mobile-beat-block:last-child { border-bottom: none; }
-
-          .gym-beat-eyebrow--mobile {
-            font-size: 11px;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--accent-gold);
-            font-family: var(--font-body);
-            font-weight: 500;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
+          .gym-beat-body {
+            font-size: 15px !important;
+            margin-bottom: 20px !important;
+            max-width: 100% !important;
           }
-          .gym-beat-eyebrow--mobile::before {
-            content: '';
-            display: block;
-            width: 20px; height: 1px;
-            background: var(--accent-gold);
-            flex-shrink: 0;
-          }
-
-          .gym-beat-title--mobile {
-            font-family: var(--font-display);
-            font-size: clamp(48px, 13vw, 64px);
-            line-height: 0.93;
-            letter-spacing: 0.02em;
-            color: var(--text-primary);
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-          }
-
-          .gym-beat-body--mobile {
-            font-family: var(--font-body);
-            font-size: 16px;
-            line-height: 1.7;
-            color: #C8C8C8;
-            margin-bottom: 20px;
-          }
-
-          .gym-beat-cta--mobile {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-family: var(--font-body);
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--accent-gold);
-            text-decoration: none;
-          }
+          .gym-beat-eyebrow { margin-bottom: 14px !important; }
         }
       `}</style>
     </div>
