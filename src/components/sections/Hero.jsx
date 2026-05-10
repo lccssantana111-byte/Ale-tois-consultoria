@@ -186,8 +186,8 @@ export function Hero() {
           }}
         />
 
-        {/* Espaço da navbar */}
-        <div style={{ height: '72px', flexShrink: 0 }} />
+        {/* Espaço da navbar — oculto no mobile onde a nav não existe */}
+        <div className="hero-nav-spacer" style={{ height: '72px', flexShrink: 0 }} />
 
         <div
           style={{
@@ -298,11 +298,8 @@ export function Hero() {
                 </motion.div>
               </motion.div>
 
-              {/* ── Direita: vídeo ── */}
-              <motion.div
-                initial={{ opacity: 0, x: 32 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.25 }}
+              {/* ── Direita: frames ── */}
+              <div
                 style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}
                 className="hero-image-wrapper"
               >
@@ -368,7 +365,7 @@ export function Hero() {
                   />
                 </div>
 
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>
@@ -429,6 +426,7 @@ export function Hero() {
 
         /* ── Mobile: vídeo em background fullscreen, texto na frente ── */
         @media (max-width: 768px) {
+          .hero-nav-spacer { display: none !important; }
           /* Container sem padding lateral para o vídeo poder ir até a borda */
           .hero-container {
             padding-left: 0 !important;
