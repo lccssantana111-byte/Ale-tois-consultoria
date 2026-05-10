@@ -468,17 +468,29 @@ export function GymReveal() {
           .gym-progress-line { display: none !important; }
           .gym-signature     { display: none !important; }
 
-          /* Beats com tipografia mobile */
-          .gym-beat-title {
-            font-size: clamp(36px, 9vw, 52px) !important;
+          /* Beats com tipografia mobile — centralizado */
+          .gym-text-col { align-items: center !important; text-align: center !important; }
+          .gym-beats-wrap { width: 100% !important; }
+          .gym-beat { align-items: center !important; }
+          .gym-beat-eyebrow {
             margin-bottom: 14px !important;
+            justify-content: center !important;
           }
+          .gym-beat-eyebrow::before { display: none !important; }
+          .gym-beat-title {
+            font-size: clamp(34px, 8.5vw, 50px) !important;
+            margin-bottom: 14px !important;
+            align-items: center !important;
+          }
+          .gym-beat-title-line { display: inline !important; }
+          .gym-beat-title-line:not(:last-child)::after { content: ' ' !important; }
           .gym-beat-body {
-            font-size: 15px !important;
+            font-size: 14px !important;
             margin-bottom: 20px !important;
             max-width: 100% !important;
+            text-align: center !important;
           }
-          .gym-beat-eyebrow { margin-bottom: 14px !important; }
+          .gym-beat-cta { justify-content: center !important; }
         }
       `}</style>
     </div>
