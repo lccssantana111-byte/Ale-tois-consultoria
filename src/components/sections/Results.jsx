@@ -461,7 +461,8 @@ export function Results() {
           .results-divider { display: none !important; }
           .results-header h2, .results-header p { text-align: center !important; }
           .metrics-grid { grid-template-columns: 1fr !important; }
-          .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); }
+          .metric-card { border-right: none !important; border-bottom: 1px solid var(--border); padding: 28px 20px !important; }
+          .metric-card p:first-child { font-size: clamp(36px, 9vw, 52px) !important; }
           .metric-card-2 { border-bottom: none !important; }
 
           .carousel-sticky {
