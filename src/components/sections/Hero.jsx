@@ -6,6 +6,11 @@ import { Badge } from '../ui/Badge'
 import { WA_LINK } from '../../lib/constants'
 import { getLenis } from '../../lib/lenis'
 
+const FRAMES_BASE = '/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03_frames/'
+const FRAMES_NAME = 'video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03_'
+const TOTAL_FRAMES = 121
+const frameUrl = (i) => `${FRAMES_BASE}${FRAMES_NAME}${String(i + 1).padStart(3, '0')}.jpg`
+
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
   visible: { opacity: 1, y: 0 },
@@ -17,58 +22,119 @@ const stagger = {
 }
 
 export function Hero() {
-  const wrapperRef     = useRef(null)
-  const videoRef       = useRef(null)
-  const videoScaleRef  = useRef(null)
-  const overlayDarkRef = useRef(null)
-  const overlayTextRef = useRef(null)
+  const wrapperRef    = useRef(null)
+  const canvasRef     = useRef(null)
+  const videoScaleRef = useRef(null)
+  const imagesRef     = useRef([])
+  const frameIndexRef = useRef(0)
 
   useEffect(() => {
-    const lenis      = getLenis()
+    const canvas     = canvasRef.current
     const videoFrame = videoScaleRef.current
-    const overlayDark = overlayDarkRef.current
-    const overlayText = overlayTextRef.current
-    const video      = videoRef.current
-    if (!lenis || !videoFrame || !overlayDark || !overlayText) return
+    if (!canvas || !videoFrame) return
 
-    // Inicia playback — autoPlay cobre a maioria dos casos,
-    // mas iOS Safari exige chamada programática após mount
-    if (video) video.play().catch(() => {})
+    const isMobile   = window.innerWidth < 768
+    const frameCount = isMobile ? 61 : TOTAL_FRAMES
+    const urlForIndex = isMobile ? (j) => frameUrl(j * 2) : frameUrl
+
+    function drawFrame(ctx, img, w, h) {
+      if (!img || !img.complete || img.naturalWidth === 0) return
+      const ca = w / h
+      const ia = img.naturalWidth / img.naturalHeight
+      let sx, sy, sw, sh
+      if (ia > ca) {
+        sh = img.naturalHeight; sw = sh * ca
+        sx = (img.naturalWidth - sw) / 2; sy = 0
+      } else {
+        sw = img.naturalWidth; sh = sw / ca
+        sx = 0
+        sy = 0
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
+    }
+
+    function renderCurrentFrame() {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      drawFrame(ctx, imagesRef.current[frameIndexRef.current], canvas.width, canvas.height)
+    }
+
+    // Preload progressivo
+    const images = new Array(frameCount)
+    imagesRef.current = images
+
+    function loadImage(j) {
+      const img = new Image()
+      images[j] = img
+      img.onload = () => { if (j === 0) renderCurrentFrame() }
+      img.src = urlForIndex(j)
+    }
+
+    const EAGER = Math.min(10, frameCount)
+    for (let j = 0; j < EAGER; j++) loadImage(j)
+    const deferredTimer = setTimeout(() => {
+      for (let j = EAGER; j < frameCount; j++) loadImage(j)
+    }, 0)
+
+    // Canvas sizing via ResizeObserver no container
+    // O buffer é em pixels físicos (DPR), o CSS mantém tamanho lógico.
+    // drawFrame recebe w/h em pixels físicos — sem scale() no ctx.
+    function resizeCanvas() {
+      const rect = videoFrame.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      const dpr = window.devicePixelRatio || 1
+      canvas.width  = Math.round(rect.width  * dpr)
+      canvas.height = Math.round(rect.height * dpr)
+      renderCurrentFrame()
+    }
+
+    const ro = new ResizeObserver(resizeCanvas)
+    ro.observe(videoFrame)
+    resizeCanvas()
 
     const getHeroProgress = () => {
       const wrapper = wrapperRef.current
       if (!wrapper) return 0
-      // lenis.scroll é a posição suavizada em px — fonte única de verdade,
-      // elimina o problema de perseguir um alvo em movimento do Lenis
-      const rect = wrapper.getBoundingClientRect()
-      const wrapperTop = rect.top + lenis.scroll
+      const scrollY    = window.scrollY
+      const wrapperTop = wrapper.getBoundingClientRect().top + scrollY
       const scrollable = wrapper.offsetHeight - window.innerHeight
       if (scrollable <= 0) return 0
-      const raw = (lenis.scroll - wrapperTop) / scrollable
-      return Math.min(Math.max(raw, 0), 1)
+      return Math.min(Math.max((scrollY - wrapperTop) / scrollable, 0), 1)
     }
 
     const onScroll = () => {
       const p = getHeroProgress()
 
-      // 1. Zoom sutil no frame — compositor only, zero layout, zero paint
+      // Frame index
+      const idx = Math.max(0, Math.min(Math.round(p * (frameCount - 1)), frameCount - 1))
+      if (idx !== frameIndexRef.current) {
+        frameIndexRef.current = idx
+        renderCurrentFrame()
+      }
+
+      // Zoom sutil no container
       videoFrame.style.transform = `scale(${1 + p * 0.08})`
-
-      // 2. Veil escuro — profundidade cinematográfica
-      overlayDark.style.opacity = p * 0.72
-
-      // 3. Texto reveal com delay suave (entra entre progress 0.3 → 0.6)
-      const tp = Math.min(Math.max((p - 0.3) / 0.3, 0), 1)
-      overlayText.style.opacity = tp
-      overlayText.style.transform = `translateY(${(1 - tp) * 16}px)`
     }
 
-    // Registra no Lenis — dispara em todo tick do RAF do Lenis (60fps)
-    // Retorna função de unsubscribe
-    const unsub = lenis.on('scroll', onScroll)
-    onScroll() // estado inicial sem aguardar o primeiro scroll
+    const lenis = getLenis()
+    let unsub = null
+    if (lenis) {
+      unsub = lenis.on('scroll', onScroll)
+    } else {
+      window.addEventListener('scroll', onScroll, { passive: true })
+    }
+    onScroll()
 
-    return () => unsub()
+    return () => {
+      clearTimeout(deferredTimer)
+      ro.disconnect()
+      if (unsub) unsub()
+      else window.removeEventListener('scroll', onScroll)
+      imagesRef.current.forEach((img) => { if (img) img.src = '' })
+      imagesRef.current = []
+    }
   }, [])
 
   return (
@@ -272,68 +338,17 @@ export function Hero() {
                     transformOrigin: 'center center',
                   }}
                 >
-                  <video
-                    ref={videoRef}
-                    src="/media/video_generator_task_19e8cce0-81a2-4f82-9c2b-9e9ba7a61a03.webm"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
+                  <canvas
+                    ref={canvasRef}
                     style={{
+                      display: 'block',
                       width: '100%',
                       height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: 'center 15%',
-                      display: 'block',
+                      maxWidth: 'none',
                     }}
                   />
 
-                  {/* Veil escuro — scroll-driven, compositor only */}
-                  <div
-                    ref={overlayDarkRef}
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: '#0a0a0a',
-                      opacity: 0,
-                      willChange: 'opacity',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                    }}
-                  />
-
-                  {/* Texto cinematográfico — revela com delay no scroll */}
-                  <div
-                    ref={overlayTextRef}
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      justifyContent: 'center',
-                      paddingBottom: '10%',
-                      opacity: 0,
-                      willChange: 'opacity, transform',
-                      pointerEvents: 'none',
-                      zIndex: 2,
-                    }}
-                  >
-                    <p style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 'clamp(14px, 2vw, 26px)',
-                      letterSpacing: '0.3em',
-                      color: 'rgba(201,168,76,0.85)',
-                      textTransform: 'uppercase',
-                      textAlign: 'center',
-                    }}>
-                      Método Comprovado
-                    </p>
-                  </div>
-
-                  {/* Overlay gradiente sutil — acima dos novos overlays */}
+                  {/* Overlay gradiente sutil */}
                   <div
                     aria-hidden="true"
                     className="hero-video-overlay"
@@ -350,30 +365,6 @@ export function Hero() {
                   />
                 </div>
 
-                {/* Card flutuante de stat */}
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.75, duration: 0.5 }}
-                  className="hero-floating-card"
-                  style={{
-                    position: 'absolute',
-                    bottom: '10%',
-                    left: '-24px',
-                    background: 'rgba(26,26,26,0.96)',
-                    border: '1px solid var(--border-gold)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '14px 20px',
-                    zIndex: 2,
-                  }}
-                >
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: '32px', color: 'var(--accent-gold)', lineHeight: 1 }}>
-                    500+
-                  </p>
-                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '4px' }}>
-                    Vidas transformadas
-                  </p>
-                </motion.div>
               </motion.div>
             </div>
           </div>
